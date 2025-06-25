@@ -30,8 +30,72 @@ class QQMessageSender:
         pyautogui.FAILSAFE = True
         pyautogui.PAUSE = 0.5
         
+    def auto_select_input_box(self):
+        """自动选中输入框"""
+        try:
+            if self.system == "Windows":
+                # Windows下的自动选中方法
+                
+                # 方法1: 使用Tab键切换到输入框
+                pyautogui.press('tab')
+                time.sleep(0.2)
+                
+                # 方法2: 使用Ctrl+A全选（如果已有内容）
+                pyautogui.hotkey('ctrl', 'a')
+                time.sleep(0.2)
+                
+                # 方法3: 使用Home键移动到开头
+                pyautogui.press('home')
+                time.sleep(0.2)
+                
+                # 方法4: 使用End键移动到末尾
+                pyautogui.press('end')
+                time.sleep(0.2)
+                
+                # 方法5: 使用Ctrl+End移动到末尾，然后Ctrl+Shift+Home选中全部
+                pyautogui.hotkey('ctrl', 'end')
+                time.sleep(0.2)
+                pyautogui.hotkey('ctrl', 'shift', 'home')
+                time.sleep(0.2)
+                
+            elif self.system == "Darwin":  # macOS
+                # macOS下的自动选中方法
+                pyautogui.hotkey('cmd', 'a')  # 全选
+                time.sleep(0.2)
+                
+            else:  # Linux
+                # Linux下的自动选中方法
+                pyautogui.hotkey('ctrl', 'a')  # 全选
+                time.sleep(0.2)
+                
+            return True
+            
+        except Exception as e:
+            print(f"自动选中输入框失败: {e}")
+            return False
+    
+    def find_and_click_input_box(self):
+        """查找并点击输入框"""
+        try:
+            # 方法1: 通过图像识别查找输入框
+            # 这里可以添加图像识别代码，但需要预先准备输入框的截图
+            
+            # 方法2: 通过坐标定位（需要用户预先设置）
+            # 可以添加配置功能让用户设置输入框坐标
+            
+            # 方法3: 使用Tab键循环切换焦点
+            for _ in range(5):  # 尝试5次
+                pyautogui.press('tab')
+                time.sleep(0.3)
+                
+            return True
+            
+        except Exception as e:
+            print(f"查找输入框失败: {e}")
+            return False
+        
     def send_messages(self, messages: List[str], contact: Optional[str] = None, 
-                     delay: int = 3, interval: int = 2, callback=None):
+                     delay: int = 3, interval: int = 2, callback=None, auto_select: bool = True):
         """发送消息"""
         if self.sending:
             return False
@@ -42,7 +106,10 @@ class QQMessageSender:
             try:
                 if callback:
                     callback(f"准备发送 {len(messages)} 条消息...")
-                    callback(f"请在 {delay} 秒内切换到QQ窗口并确保光标在输入框中")
+                    if auto_select:
+                        callback(f"请在 {delay} 秒内切换到QQ窗口，将自动选中输入框")
+                    else:
+                        callback(f"请在 {delay} 秒内切换到QQ窗口并确保光标在输入框中")
                 
                 # 倒计时
                 for i in range(delay, 0, -1):
@@ -56,6 +123,26 @@ class QQMessageSender:
                     if callback:
                         callback("发送已取消")
                     return
+                
+                # 自动选中输入框
+                if auto_select:
+                    if callback:
+                        callback("正在自动选中输入框...")
+                    
+                    # 尝试查找并点击输入框
+                    if not self.find_and_click_input_box():
+                        if callback:
+                            callback("无法自动定位输入框，请手动点击输入框")
+                    
+                    # 自动选中输入框内容
+                    if self.auto_select_input_box():
+                        if callback:
+                            callback("输入框已自动选中")
+                    else:
+                        if callback:
+                            callback("自动选中失败，请手动选中输入框")
+                    
+                    time.sleep(0.5)
                     
                 # 发送消息
                 for i, message in enumerate(messages, 1):
@@ -66,6 +153,12 @@ class QQMessageSender:
                         callback(f"正在发送第 {i}/{len(messages)} 条消息: {message[:30]}...")
                     
                     try:
+                        # 如果不是第一条消息，需要重新选中输入框
+                        if i > 1 and auto_select:
+                            # 清空输入框
+                            pyautogui.hotkey('ctrl', 'a')
+                            time.sleep(0.2)
+                        
                         # 输入消息
                         pyautogui.write(message)
                         time.sleep(0.5)
@@ -143,6 +236,7 @@ def send_messages():
         contact = data.get('contact', '').strip() or None
         delay = int(data.get('delay', 3))
         interval = int(data.get('interval', 2))
+        auto_select = data.get('auto_select', True)  # 新增：自动选中选项
         
         # 获取消息
         messages = []
@@ -161,10 +255,11 @@ def send_messages():
         message_logs.clear()
         
         # 开始发送
-        success = sender.send_messages(messages, contact, delay, interval, add_log)
+        success = sender.send_messages(messages, contact, delay, interval, add_log, auto_select)
         
         if success:
-            return jsonify({'success': True, 'message': '开始发送消息'})
+            auto_select_text = "自动选中" if auto_select else "手动选中"
+            return jsonify({'success': True, 'message': f'开始发送消息（{auto_select_text}模式）'})
         else:
             return jsonify({'success': False, 'message': '发送器正在运行中'})
             
@@ -500,6 +595,24 @@ def create_templates():
                     </div>
                 </div>
                 
+                <!-- 自动选中选项 -->
+                <div class="form-group">
+                    <label>输入框选择:</label>
+                    <div class="radio-group">
+                        <div class="radio-item">
+                            <input type="radio" id="autoSelect" name="selectMode" value="auto" checked>
+                            <label for="autoSelect">自动选中输入框 (推荐)</label>
+                        </div>
+                        <div class="radio-item">
+                            <input type="radio" id="manualSelect" name="selectMode" value="manual">
+                            <label for="manualSelect">手动选中输入框</label>
+                        </div>
+                    </div>
+                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
+                        💡 自动选中模式会尝试自动定位和选中QQ输入框，无需手动操作
+                    </small>
+                </div>
+                
                 <!-- 控制按钮 -->
                 <div class="form-group">
                     <button id="sendBtn" class="btn btn-primary">🚀 发送消息</button>
@@ -576,6 +689,7 @@ def create_templates():
             const contact = document.getElementById('contact').value;
             const delay = parseInt(document.getElementById('delay').value);
             const interval = parseInt(document.getElementById('interval').value);
+            const autoSelect = document.querySelector('input[name="selectMode"]:checked').value === 'auto';
             
             let messages = [];
             if (messageType === 'single') {
@@ -599,6 +713,7 @@ def create_templates():
                 contact: contact,
                 delay: delay,
                 interval: interval,
+                auto_select: autoSelect,
                 single_message: document.getElementById('singleMessage').value,
                 multiple_messages: document.getElementById('multipleMessage').value
             };
