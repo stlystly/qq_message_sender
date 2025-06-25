@@ -1,0 +1,26 @@
+# Windows平台QQ消息发送器依赖包
+# 使用命令安装: pip install -r requirements_windows.txt
+
+# Web框架
+Flask==2.3.3
+
+# 自动化控制
+pyautogui==0.9.54
+
+# 图像处理（pyautogui依赖）
+Pillow==10.0.1
+
+# 鼠标键盘控制（Windows专用）
+pynput==1.7.6
+
+# 窗口管理（Windows专用）
+pywin32==306
+
+# 进程管理
+psutil==5.9.5
+
+# UI自动化（Windows专用）
+pywinauto==0.6.8
+
+# 打包工具（可选）
+pyinstaller==6.1.0 

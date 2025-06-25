@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-QQ消息发送脚本 - Web界面版本
-使用Flask创建Web界面, 支持跨平台访问
+QQ消息发送脚本 - Web界面版本 (Windows专用)
+使用Flask创建Web界面, 支持Windows平台QQ消息自动发送
 """
 
 from flask import Flask, render_template, request, jsonify, session
 import pyautogui
 import time
 import threading
-import platform
 import json
 import os
 from datetime import datetime
@@ -20,7 +19,6 @@ app.secret_key = 'qq_message_sender_secret_key'
 
 class QQMessageSender:
     def __init__(self):
-        self.system = platform.system()
         self.setup_pyautogui()
         self.sending = False
         self.current_task = None
@@ -31,43 +29,30 @@ class QQMessageSender:
         pyautogui.PAUSE = 0.5
         
     def auto_select_input_box(self):
-        """自动选中输入框"""
+        """Windows下自动选中输入框"""
         try:
-            if self.system == "Windows":
-                # Windows下的自动选中方法
-                
-                # 方法1: 使用Tab键切换到输入框
-                pyautogui.press('tab')
-                time.sleep(0.2)
-                
-                # 方法2: 使用Ctrl+A全选（如果已有内容）
-                pyautogui.hotkey('ctrl', 'a')
-                time.sleep(0.2)
-                
-                # 方法3: 使用Home键移动到开头
-                pyautogui.press('home')
-                time.sleep(0.2)
-                
-                # 方法4: 使用End键移动到末尾
-                pyautogui.press('end')
-                time.sleep(0.2)
-                
-                # 方法5: 使用Ctrl+End移动到末尾，然后Ctrl+Shift+Home选中全部
-                pyautogui.hotkey('ctrl', 'end')
-                time.sleep(0.2)
-                pyautogui.hotkey('ctrl', 'shift', 'home')
-                time.sleep(0.2)
-                
-            elif self.system == "Darwin":  # macOS
-                # macOS下的自动选中方法
-                pyautogui.hotkey('cmd', 'a')  # 全选
-                time.sleep(0.2)
-                
-            else:  # Linux
-                # Linux下的自动选中方法
-                pyautogui.hotkey('ctrl', 'a')  # 全选
-                time.sleep(0.2)
-                
+            # 方法1: 使用Tab键切换到输入框
+            pyautogui.press('tab')
+            time.sleep(0.2)
+            
+            # 方法2: 使用Ctrl+A全选（如果已有内容）
+            pyautogui.hotkey('ctrl', 'a')
+            time.sleep(0.2)
+            
+            # 方法3: 使用Home键移动到开头
+            pyautogui.press('home')
+            time.sleep(0.2)
+            
+            # 方法4: 使用End键移动到末尾
+            pyautogui.press('end')
+            time.sleep(0.2)
+            
+            # 方法5: 使用Ctrl+End移动到末尾，然后Ctrl+Shift+Home选中全部
+            pyautogui.hotkey('ctrl', 'end')
+            time.sleep(0.2)
+            pyautogui.hotkey('ctrl', 'shift', 'home')
+            time.sleep(0.2)
+            
             return True
             
         except Exception as e:
@@ -77,13 +62,7 @@ class QQMessageSender:
     def find_and_click_input_box(self):
         """查找并点击输入框"""
         try:
-            # 方法1: 通过图像识别查找输入框
-            # 这里可以添加图像识别代码，但需要预先准备输入框的截图
-            
-            # 方法2: 通过坐标定位（需要用户预先设置）
-            # 可以添加配置功能让用户设置输入框坐标
-            
-            # 方法3: 使用Tab键循环切换焦点
+            # 使用Tab键循环切换焦点
             for _ in range(5):  # 尝试5次
                 pyautogui.press('tab')
                 time.sleep(0.3)
@@ -106,6 +85,8 @@ class QQMessageSender:
             try:
                 if callback:
                     callback(f"准备发送 {len(messages)} 条消息...")
+                    if contact:
+                        callback(f"目标联系人: {contact}")
                     if auto_select:
                         callback(f"请在 {delay} 秒内切换到QQ窗口，将自动选中输入框")
                     else:
@@ -236,7 +217,7 @@ def send_messages():
         contact = data.get('contact', '').strip() or None
         delay = int(data.get('delay', 3))
         interval = int(data.get('interval', 2))
-        auto_select = data.get('auto_select', True)  # 新增：自动选中选项
+        auto_select = data.get('auto_select', True)  # 自动选中选项
         
         # 获取消息
         messages = []
@@ -286,7 +267,7 @@ def get_status():
     """获取状态API"""
     return jsonify({
         'sending': sender.sending,
-        'system': sender.system
+        'system': 'Windows'
     })
 
 def create_templates():
@@ -301,7 +282,7 @@ def create_templates():
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>QQ消息发送器 - Web版本</title>
+    <title>QQ消息发送器 - Windows版本</title>
     <style>
         * {
             margin: 0;
@@ -353,15 +334,12 @@ def create_templates():
             background: #f8f9fa;
             border-radius: 10px;
             padding: 25px;
-            border: 1px solid #e9ecef;
         }
         
         .panel h3 {
             color: #2c3e50;
             margin-bottom: 20px;
             font-size: 1.3em;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
         }
         
         .form-group {
@@ -539,7 +517,7 @@ def create_templates():
     <div class="container">
         <div class="header">
             <h1>🚀 QQ消息发送器</h1>
-            <p>跨平台QQ消息自动发送工具 - Web版本</p>
+            <p>Windows平台QQ消息自动发送工具 - Web版本</p>
         </div>
         
         <div class="content">
@@ -550,7 +528,10 @@ def create_templates():
                 <!-- 联系人设置 -->
                 <div class="form-group">
                     <label for="contact">联系人名称 (可选):</label>
-                    <input type="text" id="contact" class="form-control" placeholder="输入联系人名称">
+                    <input type="text" id="contact" class="form-control" placeholder="输入联系人名称，留空则发送给当前聊天窗口">
+                    <small style="color: #7f8c8d; margin-top: 5px; display: block;">
+                        💡 留空则发送给当前聊天窗口
+                    </small>
                 </div>
                 
                 <!-- 消息类型选择 -->
@@ -856,18 +837,22 @@ def create_templates():
 </body>
 </html>'''
     
-    with open(os.path.join(templates_dir, 'index.html'), 'w', encoding='utf-8') as f:
+    # 写入HTML文件
+    html_file = os.path.join(templates_dir, 'index.html')
+    with open(html_file, 'w', encoding='utf-8') as f:
         f.write(html_template)
+    
+    print(f"✅ 模板文件已创建: {html_file}")
 
-if __name__ == '__main__':
-    # 创建模板文件
+if __name__ == "__main__":
+    # 创建模板
     create_templates()
     
-    # 启动Web服务器
-    print("=== QQ消息发送器 - Web版本 ===")
+    print("🚀 QQ消息发送器 - Windows版本")
+    print("=" * 50)
     print("正在启动Web服务器...")
-    print("请在浏览器中访问: http://localhost:5000")
-    print("确保QQ窗口处于活动状态")
-    print("按 Ctrl+C 停止服务器")
+    print("启动后请在浏览器中访问: http://localhost:5000")
+    print("=" * 50)
     
+    # 启动Flask应用
     app.run(host='0.0.0.0', port=5000, debug=False) 
